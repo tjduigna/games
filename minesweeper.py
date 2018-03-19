@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright (c) 2018, Thomas J. Duignan
 # Distributed under the terms of the Apache License 2.0
 """A minesweeper clone by Thomas J. Duignan."""
@@ -64,7 +64,7 @@ class Board(object):
         cnt = len([cell for cell in self.values()
                    if cell.value < 0 
                    and cell.view == 'M'])
-        if cnt == self.bomb: return True
+        if cnt == self.bomb and not self.left: return True
 
     def update_view(self, tup, mark=None):
         """Update the view of the grid based on user input."""
@@ -119,7 +119,7 @@ class Board(object):
         fmt = f.format
         s = fmt('') 
         r = range(self.d)
-        hdr = s + ((' ' + f) * self.d + '\n').format(*r)
+        hdr = fmt(self.left) + ((' ' + f) * self.d + '\n').format(*r)
         lbrk = s + '-' * (self.shape[0]) + '\n'
         ret = hdr + lbrk
         for i in range(self.d):
@@ -254,7 +254,7 @@ def curses_driver(scr, board):
 
         # The `heads-up display` interface
         rules = ["| 'enter' or 'space' to reveal",
-                 "| 'm' or 'M' to mark k={}".format(k),
+                 "| 'm' or 'M' to mark",
                  "| 'q' to quit",
                  "| {} mines remaining".format(board.left)]
         if lost: rules.append("| Game over!")
@@ -291,14 +291,18 @@ def command_line_driver(b):
     """Simple gameplay interface using stdout."""
     prompt = '''\
 Enter a grid position: row,col[M to mark] 
-(marks remaining in top left).'''
+(marks remaining in top left). Position='''
     lose = 'You stepped on a mine! GG.'
     win = 'You correctly identified all the mines! GG.'
 
     while True:
         print(b)
         tup, mark = interact(prompt, typ=tuple)
-        chk = b.update_view(tup, mark)
+        try:
+            chk = b.update_view(tup, mark)
+        except KeyError:
+            print('Out of range.')
+            continue
         if chk is not None:
             print(b)
             print(win if chk else lose)
@@ -333,19 +337,23 @@ def interact(prompt, typ=None):
 
 def main():
     """Initialize configuration for the game."""
-    dims = interact('''Hello, Welcome to Minesweeper. 
-Please enter a grid size. [5-20]''', typ=int)
-    dims = min(20, max(5, dims))
-    diff = interact('''Please select a difficulty. 
-0: Easy    1: Medium    2: Hard''', typ=int)
-    diff = min(2, max(0, diff))
-    board = Board(dims, diff) 
-    drvr = interact('''\
+    try:
+        dims = interact('''Hello, Welcome to Minesweeper. 
+Please enter a grid size from 5-20. Size=''', typ=int)
+        dims = min(20, max(5, dims))
+        diff = interact('''\
+Choose a difficulty from 0-2. Difficulty=''', typ=int)
+        diff = min(2, max(0, diff))
+        board = Board(dims, diff) 
+        drvr = interact('''\
 Launch with curses? [Y/n]''', typ=str)
-    if 'y' in drvr.lower(): 
-        curses.wrapper(curses_driver, board)
-    else: 
-        command_line_driver(board)
+        if 'y' in drvr.lower(): 
+            curses.wrapper(curses_driver, board)
+        else: 
+            command_line_driver(board)
+    except KeyboardInterrupt:
+        print()
+        exit()
 
 
 if __name__ == '__main__': main()
