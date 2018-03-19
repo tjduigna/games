@@ -153,7 +153,8 @@ def curses_driver(scr, board):
 
     def _scr_to_grid(b, ax, ay):
         """Generate a dictionary of all cursor tuples 
-        that correspond to cell positions."""
+        that correspond to cell positions as well as a 
+        map of grid tuples to starting screen positions."""
         mapr = {}
         cy = ay
         for i in range(b.d):
@@ -166,6 +167,7 @@ def curses_driver(scr, board):
                 cx += 3
             cy += 1
         return mapr
+
 
     def _draw_board(scr, ax, ay, lbrk, board):
         """Draw the board with color highlighting 
@@ -234,9 +236,11 @@ def curses_driver(scr, board):
             mapr = _scr_to_grid(board, ax, ay)
             ph, pw = h, w
         else:
-            if h < bx + 2 or w < by + 2:
+            if h < by + 2 or w < bx + 2:
                 raise Exception("Terminal was resized "
-                                "too small for game.")
+                                "too small for the game."
+                                " h={} < by+2={} or "
+                                "w={} < bx+2={}".format(h, bx, w, by))
             if ph != h or pw != w:
                 mapr = _scr_to_grid(board, ax, ay)
                 ph, pw = h, w
@@ -250,6 +254,7 @@ def curses_driver(scr, board):
         # Keep the cursor in bounds and draw the board
         cx = min(w - 1, max(0, cx))
         cy = min(h - 1, max(0, cy))
+
         _draw_board(scr, ax, ay, lbrk, board)
 
         # The `heads-up display` interface
